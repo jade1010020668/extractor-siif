@@ -2,7 +2,6 @@ import io
 import re
 import pandas as pd
 import streamlit as st
-import streamlit.components.v1 as components
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
