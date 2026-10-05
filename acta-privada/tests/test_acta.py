@@ -111,3 +111,12 @@ def test_pipeline_completo_sin_salir_de_loopback(transcript_docx, roster, fake_o
     monkeypatch.setattr(socket.socket, "connect", guard)
     acta = build_acta(read_docx(transcript_docx), roster, llm=OllamaClient(host=url, model="modelo-falso"))
     assert build_docx(acta)
+
+
+def test_temas_consecutivos_repetidos_se_unen():
+    from acta_privada.structure import _normalizar_temas
+    raw = [{"punto": 2, "titulo": "Tema A", "inicio": 3},
+           {"punto": 2, "titulo": "tema a ", "inicio": 5},
+           {"punto": 2, "titulo": "Tema B", "inicio": 7}]
+    temas = _normalizar_temas(raw, ["Aprobación", "Varios"], 10, 0)
+    assert [(t.titulo, t.inicio, t.fin) for t in temas] == [("Tema A", 3, 6), ("Tema B", 7, 9)]

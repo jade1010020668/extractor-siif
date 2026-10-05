@@ -201,7 +201,11 @@ def _normalizar_temas(raw: list[dict], orden: list[str], n_seg: int, fin_apertur
     raw = sorted((t for t in raw if 0 <= t["inicio"] < n_seg), key=lambda t: t["inicio"])
     dedup: list[dict] = []
     for t in raw:
-        if not dedup or t["inicio"] > dedup[-1]["inicio"]:
+        if dedup and t["inicio"] <= dedup[-1]["inicio"]:
+            continue
+        mismo = dedup and t["punto"] == dedup[-1]["punto"] and \
+            t["titulo"].strip().lower() == dedup[-1]["titulo"].strip().lower()
+        if not mismo:                      # tema repetido seguido = continuación del anterior
             dedup.append(t)
     out: list[Tema] = []
     for i, t in enumerate(dedup):
