@@ -5,6 +5,7 @@ on:
     paths: ["acta-privada/**", ".github/workflows/acta-privada.yml"]
   push:
     tags: ["acta-v*"]
+    branches: ["acta-release/*"]   # subir la rama acta-release/0.1.0 publica la versión 0.1.0
   workflow_dispatch:
     inputs:
       publicar_version:
@@ -37,7 +38,7 @@ jobs:
       - name: Versión
         run: |
           $pub = "${{ github.event.inputs.publicar_version }}"
-          $v = if ($env:GITHUB_REF_TYPE -eq "tag") { $env:GITHUB_REF_NAME -replace '^acta-v','' } elseif ($pub) { $pub } else { "0.0.0-dev.$env:GITHUB_RUN_NUMBER" }
+          $v = if ($env:GITHUB_REF_TYPE -eq "tag") { $env:GITHUB_REF_NAME -replace '^acta-v','' } elseif ($env:GITHUB_REF_NAME -like 'acta-release/*') { $env:GITHUB_REF_NAME -replace '^acta-release/','' } elseif ($pub) { $pub } else { "0.0.0-dev.$env:GITHUB_RUN_NUMBER" }
           "VERSION=$v" >> $env:GITHUB_ENV
       - name: Construir instalador
         run: ./acta-privada/packaging/windows/build.ps1 -Version $env:VERSION
@@ -49,7 +50,7 @@ jobs:
           path: acta-privada/dist/ActaPrivada-Setup.exe
           retention-days: 14
       - name: Publicar en Releases
-        if: github.ref_type == 'tag' || github.event.inputs.publicar_version != ''
+        if: github.ref_type == 'tag' || startsWith(github.ref_name, 'acta-release/') || github.event.inputs.publicar_version != ''
         env: { GH_TOKEN: "${{ github.token }}" }
         run: |
           $tag = "acta-v$env:VERSION"
