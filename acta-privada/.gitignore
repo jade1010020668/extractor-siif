@@ -1,0 +1,9 @@
+# Nada confidencial debe llegar al repositorio
+*.docx
+!tests/**/*.docx
+plantilla/*
+!plantilla/README.md
+config/roster.json
+config/textos.json
+__pycache__/
+.pytest_cache/
