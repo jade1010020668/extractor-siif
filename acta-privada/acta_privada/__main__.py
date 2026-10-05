@@ -9,7 +9,8 @@ import sys
 from pathlib import Path
 
 from .docx_builder import build_docx
-from .llm import DEFAULT_HOST, DEFAULT_MODEL, LLMUnavailable, OllamaClient
+from .llm import DEFAULT_HOST, LLMUnavailable, OllamaClient
+from .perfiles import PERFILES
 from .roster import load_json
 from .structure import build_acta
 from .transcript import read_any
@@ -21,17 +22,21 @@ def main(argv=None) -> int:
     ap.add_argument("-o", "--salida", default="acta.docx")
     ap.add_argument("--numero", default="")
     ap.add_argument("--sin-ia", action="store_true", help="solo reglas, sin Ollama")
-    ap.add_argument("--modelo", default=DEFAULT_MODEL)
+    ap.add_argument("--perfil", choices=sorted(PERFILES), default="8gb",
+                    help="8gb: qwen2.5 7B · 16gb: qwen2.5 14B")
+    ap.add_argument("--modelo", help="otro modelo local (anula el del perfil)")
     ap.add_argument("--host", default=DEFAULT_HOST)
     a = ap.parse_args(argv)
 
     tr = read_any(a.transcripcion, Path(a.transcripcion).read_bytes())
     llm = None
     if not a.sin_ia:
-        llm = OllamaClient(host=a.host, model=a.modelo)
+        llm = OllamaClient.desde_perfil(PERFILES[a.perfil], host=a.host)
+        if a.modelo:
+            llm = OllamaClient(host=a.host, model=a.modelo, num_ctx=llm.num_ctx, part_chars=llm.part_chars)
         try:
             if not llm.has_model():
-                print(f"El modelo {a.modelo} no está instalado: ollama pull {a.modelo}", file=sys.stderr)
+                print(f"El modelo {llm.model} no está instalado: ollama pull {llm.model}", file=sys.stderr)
                 return 2
         except LLMUnavailable as exc:
             print(exc, file=sys.stderr)

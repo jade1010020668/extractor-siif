@@ -17,8 +17,16 @@ from docx.oxml.ns import qn
 from docx.shared import Pt, Twips
 
 from .models import ActaData, Person
+from .paths import user_plantilla
 
 PLANTILLA = Path(__file__).resolve().parent.parent / "plantilla" / "plantilla_acta.docx"
+
+
+def plantilla_activa() -> Path | None:
+    for p in (user_plantilla(), PLANTILLA):
+        if p.exists():
+            return p
+    return None
 MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto",
          "septiembre", "octubre", "noviembre", "diciembre"]
 FONT, SIZE = "Arial", 11
@@ -112,8 +120,9 @@ def _seccion(cell, label, parrafos):
 
 # ───────────────────────────── construcción ─────────────────────────────
 def _base_document():
-    if PLANTILLA.exists():
-        doc = Document(str(PLANTILLA))
+    plantilla = plantilla_activa()
+    if plantilla:
+        doc = Document(str(plantilla))
         body = doc.element.body
         for el in list(body):
             if el.tag != qn("w:sectPr"):

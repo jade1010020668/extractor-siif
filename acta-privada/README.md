@@ -15,6 +15,7 @@ formato de la Sala Plena (datos generales, orden del día, desarrollo, firmas).
 
 ## Cómo se protege la información
 
+1. **Solo modelos locales.** Los modelos «cloud» de Ollama (que se ejecutan en ollama.com) están bloqueados.
 1. **Solo localhost.** `privacy.py` bloquea cualquier URL de Ollama que no sea `127.0.0.1`/`localhost`. Usar un servidor de tu red interna exige `ACTA_PERMITIR_RED_LOCAL=1` (decisión explícita).
 2. **Sin proxies.** Las llamadas a Ollama ignoran `HTTP(S)_PROXY`, para que un proxy corporativo no vea el contenido.
 3. **La interfaz solo escucha en `127.0.0.1`** (verificado) y sin telemetría (`gatherUsageStats=false`). No usa fuentes ni CDN externos.
@@ -25,31 +26,60 @@ formato de la Sala Plena (datos generales, orden del día, desarrollo, firmas).
 
 > ⚠️ **No despliegues esta app en Render, Streamlit Cloud ni similares** (el extractor SIIF de la raíz del repo sí está desplegado así; esta app no debe estarlo). Ejecútala solo en el computador de quien maneja la información, con disco cifrado (BitLocker/FileVault).
 
-## Instalación (una vez)
+## Instalación en Windows (una sola descarga)
+
+1. Descargue **`ActaPrivada-Setup.exe`** (≈150–250 MB) desde *Releases* del repositorio.
+2. Ejecútelo. No pide permisos de administrador: se instala solo para su usuario.
+   Si Windows muestra «Windows protegió su PC», pulse *Más información → Ejecutar de todas formas*
+   (el instalador no está firmado digitalmente).
+3. Abra **Actas Privadas** desde el escritorio o el menú Inicio. Se abre una ventana negra
+   (no la cierre) y el navegador en `http://127.0.0.1:...`.
+4. **Primera vez:** en la barra lateral elija el modelo y pulse **⬇️ Descargar modelo**:
+
+| Su equipo | Modelo | Descarga |
+|---|---|---|
+| 8 GB de RAM | `qwen2.5:7b-instruct` | 4,7 GB |
+| 16 GB de RAM o más | `qwen2.5:14b-instruct` (redacta mejor) | 9,0 GB |
+
+   La app detecta su RAM y marca el recomendado. Puede tener los dos y cambiar cuando quiera.
+5. En la pestaña **⚙️ Configuración** registre los participantes habituales, los textos fijos y,
+   si quiere el logo, suba un acta anterior como plantilla.
+
+**Qué incluye el instalador:** la app, Python y Ollama (versión para procesador, sin las
+librerías NVIDIA de 1,4 GB; si su equipo ya tiene Ollama abierto, se usa ese). El modelo no va
+dentro porque pesa 4,7–9 GB; se descarga una sola vez desde la app.
+
+**Equipos sin internet:** descargue el modelo en un equipo y copie la carpeta
+`%LOCALAPPDATA%\ActaPrivada\modelos` al mismo lugar en el otro.
+
+**Dónde quedan sus datos:** `%LOCALAPPDATA%\ActaPrivada` (configuración, plantilla y modelos).
+Las transcripciones y actas **no** se guardan ahí: solo viven en memoria mientras la app está abierta.
+Al desinstalar, esa carpeta se conserva; bórrela a mano si quiere eliminar todo.
+
+## Instalación para desarrollo (cualquier sistema)
 
 ```bash
-# 1. Ollama: https://ollama.com/download   (luego, con internet, una sola vez:)
-ollama pull qwen2.5:14b-instruct      # buen español; con poca RAM: qwen2.5:7b-instruct
-# 2. App
+# Ollama: https://ollama.com/download ; luego: ollama pull qwen2.5:7b-instruct
 cd acta-privada
 pip install -r requirements.txt
-cp config/roster.example.json config/roster.json     # editar con nombres y cargos reales
-cp config/textos.example.json config/textos.json     # editar textos fijos de la entidad
-# opcional: poner un acta anterior en plantilla/plantilla_acta.docx (logo, encabezado, pie)
-./run.sh        # Windows: run.bat   → se abre en http://127.0.0.1:8501
+python launcher.py          # o ./run.sh / run.bat
 ```
 
-Tras descargar el modelo puedes **desconectar el equipo de internet**: todo sigue funcionando (es la mejor forma de comprobar la privacidad).
+## Cómo se genera el instalador
 
-Memoria orientativa: modelo 7B ≈ 8 GB de RAM; 14B ≈ 16 GB. Cambia el modelo en la barra lateral o con `ACTA_MODELO`.
+El flujo `.github/workflows/acta-privada.yml` corre en una máquina Windows de GitHub:
+pruebas → `packaging/windows/build.ps1` (Python embebido + dependencias + Ollama sin CUDA +
+Inno Setup) → `prueba_instalador.ps1` (instala en silencio, arranca la app, descarga un modelo
+pequeño y genera un acta con IA). En cada PR el instalador queda como *artifact*; al crear un tag
+`acta-vX.Y.Z` se publica en *Releases*.
 
 ## Uso
 
-**Interfaz:** subir transcripción → revisar participantes → «Generar acta» → revisar/editar cada sección → descargar `.docx`.
+**Interfaz:** (pestaña «Generar acta») subir transcripción → revisar participantes → «Generar acta» → revisar/editar cada sección → descargar `.docx`.
 
 **Línea de comandos:**
 ```bash
-python -m acta_privada transcripcion.docx -o acta.docx --numero 074          # con IA local
+python -m acta_privada transcripcion.docx -o acta.docx --numero 074 --perfil 8gb  # o 16gb
 python -m acta_privada transcripcion.docx -o acta.docx --numero 074 --sin-ia # solo reglas
 ```
 

@@ -45,6 +45,12 @@ TRANSCRIPT_LINES = [
 ]
 
 
+@pytest.fixture(autouse=True)
+def _datos_aislados(tmp_path, monkeypatch):
+    """Las pruebas nunca leen ni escriben la carpeta de datos real del usuario."""
+    monkeypatch.setenv("ACTA_DATA_DIR", str(tmp_path / "datos"))
+
+
 @pytest.fixture
 def roster():
     return json.loads(json.dumps(ROSTER))
@@ -80,6 +86,19 @@ class _FakeOllama(BaseHTTPRequestHandler):
 
     def do_POST(self):
         req = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+        if self.path == "/api/pull":
+            lines = [{"status": "pulling manifest"},
+                     {"status": "downloading", "total": 100, "completed": 50},
+                     {"status": "downloading", "total": 100, "completed": 100},
+                     {"status": "success"}]
+            body = "".join(json.dumps(x) + "\n" for x in lines).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/x-ndjson")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            _FakeOllama.log.append(("pull", req["model"]))
+            return
         system = req["messages"][0]["content"]
         user = req["messages"][1]["content"]
         _FakeOllama.log.append((system[:40], user))

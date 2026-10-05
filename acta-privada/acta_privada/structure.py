@@ -175,7 +175,7 @@ def _detectar_temas(llm: OllamaClient, tr: Transcript, people: dict[str, Person]
     lines = [f"[{s.idx}] {_label(s, people)}: {s.text[:220]}" for s in tr.segments]
     orden: list[str] = []
     temas: list[dict] = []
-    for chunk in _chunks(lines, INDEX_CHARS):
+    for chunk in _chunks(lines, min(INDEX_CHARS, getattr(llm, "part_chars", INDEX_CHARS))):
         ctx = ""
         if temas:
             ult = temas[-1]
@@ -216,7 +216,8 @@ def _redactar_tema(llm: OllamaClient, tr: Transcript, tema: Tema, people: dict[s
     segs = tr.segments[tema.inicio: tema.fin + 1]
     lines = [f"{_label(s, people)}: {s.text}" for s in segs]
     parrafos: list[tuple[str, str]] = []
-    for part in _chunks(lines, PART_CHARS):
+    budget = getattr(llm, "part_chars", PART_CHARS)
+    for part in _chunks(lines, budget):
         user = (f"Participantes:\n{lista}\n\nTema: {tema.titulo}\n\nTranscripción:\n" + "\n".join(part))
         out = llm.chat_json(_SYS_REDACCION, user, _PARRAFOS_SCHEMA)
         for p in out.get("parrafos", []):
@@ -227,8 +228,8 @@ def _redactar_tema(llm: OllamaClient, tr: Transcript, tema: Tema, people: dict[s
     tema.discusion = [t for k, t in parrafos if k == "discusion"]
     tema.cierre = [t for k, t in parrafos if k == "cierre"]
     relato = "\n\n".join(t for _, t in parrafos)
-    if len(relato) > PART_CHARS * 2:               # conserva inicio y final
-        relato = relato[:PART_CHARS] + "\n[...]\n" + relato[-PART_CHARS:]
+    if len(relato) > budget * 2:                   # conserva inicio y final
+        relato = relato[:budget] + "\n[...]\n" + relato[-budget:]
     out = llm.chat_json(_SYS_CONSOLIDA, f"Participantes:\n{lista}\n\nTema: {tema.titulo}\n\nRelato:\n{relato}",
                         _CONSOLIDA_SCHEMA)
     tema.pretension = str(out.get("pretension", "")).strip()

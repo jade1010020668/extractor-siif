@@ -10,12 +10,24 @@ from __future__ import annotations
 
 import ipaddress
 import os
+import re
 import socket
 from urllib.parse import urlparse
 
 
 class PrivacyError(RuntimeError):
     pass
+
+
+def validate_model(name: str) -> str:
+    """Ollama ofrece modelos «cloud» (p. ej. 'gpt-oss:120b-cloud') que se ejecutan
+    en servidores de ollama.com: enviarían el texto a internet. Se bloquean."""
+    if re.search(r"cloud", name, re.I):
+        raise PrivacyError(
+            f"Bloqueado: «{name}» es un modelo en la nube de Ollama y enviaría el "
+            "contenido a internet. Use un modelo local (p. ej. qwen2.5:7b-instruct)."
+        )
+    return name.strip()
 
 
 def _is_loopback(host: str) -> bool:

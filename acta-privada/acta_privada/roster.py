@@ -9,6 +9,7 @@ import unicodedata
 from pathlib import Path
 
 from .models import Person
+from .paths import user_config
 
 CONFIG_DIR = Path(__file__).resolve().parent.parent / "config"
 
@@ -21,9 +22,9 @@ def norm(s: str) -> str:
 
 
 def load_json(name: str) -> dict:
-    """Carga config/<name>.json y, si no existe, config/<name>.example.json."""
-    for fname in (f"{name}.json", f"{name}.example.json"):
-        p = CONFIG_DIR / fname
+    """Busca <name>.json en la carpeta de datos del usuario, luego en config/ del
+    programa y por último el ejemplo config/<name>.example.json."""
+    for p in (user_config(name), CONFIG_DIR / f"{name}.json", CONFIG_DIR / f"{name}.example.json"):
         if p.exists():
             return json.loads(p.read_text(encoding="utf-8"))
     return {}
