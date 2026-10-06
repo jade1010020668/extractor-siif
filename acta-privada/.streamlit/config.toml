@@ -1,0 +1,15 @@
+[server]
+address = "127.0.0.1"      # solo accesible desde este equipo
+headless = true
+enableCORS = true
+enableXsrfProtection = true
+fileWatcherType = "none"
+maxUploadSize = 50
+
+[browser]
+gatherUsageStats = false   # sin telemetría
+serverAddress = "127.0.0.1"
+
+[client]
+toolbarMode = "minimal"
+showErrorDetails = false

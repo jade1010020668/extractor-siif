@@ -1,0 +1,126 @@
+"""Cliente mínimo de Ollama (solo biblioteca estándar, solo localhost)."""
+from __future__ import annotations
+
+import json
+import os
+import re
+import urllib.error
+import urllib.request
+from dataclasses import dataclass, field
+
+from .perfiles import PERFILES, Perfil
+from .privacy import validate_endpoint, validate_model
+
+DEFAULT_HOST = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434")
+DEFAULT_MODEL = os.environ.get("ACTA_MODELO", PERFILES["8gb"].modelo)
+
+
+class LLMUnavailable(RuntimeError):
+    pass
+
+
+# Opener sin proxies: nunca enrutar el tráfico local por un proxy externo.
+_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+
+
+def _extract_json(text: str) -> dict:
+    text = text.strip()
+    text = re.sub(r"^```(?:json)?|```$", "", text, flags=re.M).strip()
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        start, end = text.find("{"), text.rfind("}")
+        if start >= 0 and end > start:
+            return json.loads(text[start : end + 1])
+        raise
+
+
+@dataclass
+class OllamaClient:
+    host: str = DEFAULT_HOST
+    model: str = DEFAULT_MODEL
+    num_ctx: int = 8192
+    part_chars: int = 7000          # texto de transcripción por llamada
+    temperature: float = 0.2
+    timeout: int = 900
+    calls: int = field(default=0, init=False)
+
+    def __post_init__(self):
+        self.host = validate_endpoint(self.host)
+        self.model = validate_model(self.model)
+
+    @classmethod
+    def desde_perfil(cls, perfil: Perfil, host: str = DEFAULT_HOST) -> "OllamaClient":
+        return cls(host=host, model=perfil.modelo, num_ctx=perfil.num_ctx, part_chars=perfil.part_chars)
+
+    def _request(self, path: str, payload: dict | None = None) -> dict:
+        data = json.dumps(payload).encode() if payload is not None else None
+        req = urllib.request.Request(
+            self.host + path,
+            data=data,
+            headers={"Content-Type": "application/json"},
+            method="POST" if data is not None else "GET",
+        )
+        try:
+            with _OPENER.open(req, timeout=self.timeout) as resp:
+                return json.loads(resp.read().decode("utf-8"))
+        except (urllib.error.URLError, TimeoutError, ConnectionError) as exc:
+            raise LLMUnavailable(
+                f"No se pudo hablar con Ollama en {self.host} ({exc}). "
+                "¿Está instalado y ejecutándose (ollama serve)?"
+            ) from exc
+
+    def available_models(self) -> list[str]:
+        return [m["name"] for m in self._request("/api/tags").get("models", [])]
+
+    def has_model(self, model: str | None = None) -> bool:
+        model = model or self.model
+        names = self.available_models()
+        return model in names or f"{model}:latest" in names
+
+    def pull(self, model: str | None = None, progress=None) -> None:
+        """Descarga un modelo (solo baja archivos del catálogo de Ollama; no envía
+        contenido de las reuniones). progress(fraccion|None, estado)."""
+        model = validate_model(model or self.model)
+        req = urllib.request.Request(
+            self.host + "/api/pull", data=json.dumps({"model": model, "stream": True}).encode(),
+            headers={"Content-Type": "application/json"}, method="POST")
+        try:
+            with _OPENER.open(req, timeout=self.timeout) as resp:
+                for raw in resp:
+                    if not raw.strip():
+                        continue
+                    ev = json.loads(raw)
+                    if "error" in ev:
+                        raise LLMUnavailable(f"No se pudo descargar {model}: {ev['error']}")
+                    total, done = ev.get("total"), ev.get("completed")
+                    frac = (done / total) if total and done is not None else None
+                    if progress:
+                        progress(frac, ev.get("status", ""))
+                    if ev.get("status") == "success":
+                        return
+        except (urllib.error.URLError, TimeoutError, ConnectionError) as exc:
+            raise LLMUnavailable(f"Se interrumpió la descarga de {model}: {exc}") from exc
+        raise LLMUnavailable(f"La descarga de {model} terminó sin confirmación.")
+
+    def chat_json(self, system: str, user: str, schema: dict | None = None) -> dict:
+        """Pide una respuesta JSON; reintenta una vez si viene malformada."""
+        last_err: Exception | None = None
+        for attempt in range(2):
+            payload = {
+                "model": self.model,
+                "stream": False,
+                "format": schema if (schema and attempt == 0) else "json",
+                "options": {"temperature": self.temperature, "num_ctx": self.num_ctx},
+                "messages": [
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user},
+                ],
+            }
+            self.calls += 1
+            out = self._request("/api/chat", payload)
+            try:
+                return _extract_json(out["message"]["content"])
+            except (KeyError, json.JSONDecodeError) as exc:
+                last_err = exc
+        raise LLMUnavailable(f"El modelo no devolvió JSON válido: {last_err}")

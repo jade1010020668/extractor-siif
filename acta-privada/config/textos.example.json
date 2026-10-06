@@ -1,0 +1,9 @@
+{
+  "tipo_sesion": "SESIÓN ORDINARIA",
+  "orden_del_dia_por_defecto": ["Aprobación del Orden del Día", "Proposiciones y Varios"],
+  "parrafo_virtual": "En cumplimiento a lo dispuesto por la norma interna aplicable, la participación de los señores Comisionados se realizará de manera virtual mediante el uso de medios tecnológicos.",
+  "aprobacion_unanime": "La Presidencia somete a consideración el Orden del Día de la Sala Ordinaria, el cual es aprobado por unanimidad de manera virtual.",
+  "aprobacion_sin_unanimidad": "La Presidencia somete a consideración el Orden del Día de la Sala Ordinaria. [VERIFICAR: no se pudo establecer la votación.]",
+  "sin_invitados": "No hubo invitados para la presente Sesión.",
+  "nota_firmas": "La presente acta se entiende aprobada con la firma de la Presidenta y la Profesional Universitaria."
+}

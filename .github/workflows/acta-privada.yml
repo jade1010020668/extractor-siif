@@ -1,0 +1,57 @@
+name: acta-privada
+
+on:
+  pull_request:
+    paths: ["acta-privada/**", ".github/workflows/acta-privada.yml"]
+  push:
+    tags: ["acta-v*"]
+    branches: ["acta-release/*"]   # subir la rama acta-release/0.1.0 publica la versión 0.1.0
+  workflow_dispatch:
+    inputs:
+      publicar_version:
+        description: "Versión a publicar en Releases (p. ej. 0.1.0). Vacío = solo compilar."
+        required: false
+        default: ""
+
+permissions:
+  contents: write   # solo para publicar el instalador en una Release (tags acta-v*)
+
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: acta-privada } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install -r requirements-app.txt pytest
+      - run: python -m pytest -q
+
+  instalador-windows:
+    needs: pruebas
+    runs-on: windows-latest
+    defaults: { run: { shell: pwsh } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - name: Versión
+        run: |
+          $pub = "${{ github.event.inputs.publicar_version }}"
+          $v = if ($env:GITHUB_REF_TYPE -eq "tag") { $env:GITHUB_REF_NAME -replace '^acta-v','' } elseif ($env:GITHUB_REF_NAME -like 'acta-release/*') { $env:GITHUB_REF_NAME -replace '^acta-release/','' } elseif ($pub) { $pub } else { "0.0.0-dev.$env:GITHUB_RUN_NUMBER" }
+          "VERSION=$v" >> $env:GITHUB_ENV
+      - name: Construir instalador
+        run: ./acta-privada/packaging/windows/build.ps1 -Version $env:VERSION
+      - name: Probar instalador (instala, arranca y genera un acta con IA)
+        run: ./acta-privada/packaging/windows/prueba_instalador.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ActaPrivada-Setup-${{ env.VERSION }}
+          path: acta-privada/dist/ActaPrivada-Setup.exe
+          retention-days: 14
+      - name: Publicar en Releases
+        if: github.ref_type == 'tag' || startsWith(github.ref_name, 'acta-release/') || github.event.inputs.publicar_version != ''
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: |
+          $tag = "acta-v$env:VERSION"
+          gh release create $tag acta-privada/dist/ActaPrivada-Setup.exe --target $env:GITHUB_SHA --title "Actas Privadas $env:VERSION" --notes "Instalador para Windows 10/11 (64 bits). Se instala sin permisos de administrador. Ver acta-privada/README.md."

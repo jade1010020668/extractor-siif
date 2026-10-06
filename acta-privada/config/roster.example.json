@@ -1,0 +1,13 @@
+{
+  "ciudad": "Bogotá D.C.",
+  "personas": [
+    {"nombre": "Ana María Pérez Gómez", "aliases": ["Ana Perez Gomez"],
+     "rol": "presidente", "titulo": "Comisionada Presidente"},
+    {"nombre": "Carlos Andrés Rojas Lema", "aliases": ["Carlos Rojas"],
+     "rol": "comisionado", "titulo": "Comisionado"},
+    {"nombre": "Lucía Fernanda Mora Díaz", "aliases": ["Lucia Mora"],
+     "rol": "comisionado", "titulo": "Comisionada"},
+    {"nombre": "Marta Elena Suárez Ríos", "aliases": ["Relatoria", "Secretaría"],
+     "rol": "relatoria", "titulo": "Profesional Universitaria"}
+  ]
+}

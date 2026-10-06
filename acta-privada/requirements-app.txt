@@ -1,0 +1,5 @@
+# Dependencias exactas que viajan dentro del instalador
+python-docx==1.2.0
+streamlit==1.65.0
+pandas==3.0.6
+pyarrow==25.0.1
