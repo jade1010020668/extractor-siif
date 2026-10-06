@@ -12,7 +12,8 @@ App que recibe el **.docx de la transcripción de una reunión (Teams)** y devue
 - **Carpeta:** `acta-privada/` (independiente del extractor SIIF de la raíz, que sí se despliega en Render/Streamlit Cloud; **esta app NO debe desplegarse en la nube**).
 - **Versión publicada:** Release `acta-v0.1.0` → instalador `ActaPrivada-Setup.exe` (≈91 MB)
   https://github.com/jade1010020668/extractor-siif/releases/tag/acta-v0.1.0
-- **Pruebas:** `python -m pytest -q` → 23 pasan. CI en Windows instala el `.exe`, lo arranca y genera un acta con un modelo real pequeño (`qwen2.5:1.5b`).
+- **Modelo y el instalador:** el modelo NO va dentro del `.exe` (límite de 2 GB por archivo en GitHub Releases; el modelo pesa 4,7–9 GB). `ActaPrivada.iss` ofrece 4 opciones (auto/8 GB/16 GB/ninguno) y ejecuta `instalar_modelo.py`, que inicia el Ollama incluido y descarga el modelo durante la instalación. Si no hay internet, la instalación no falla: la app tiene botón «Descargar modelo».
+- **Pruebas:** `python -m pytest -q` → 25 pasan. CI en Windows instala el `.exe`, lo arranca y genera un acta con un modelo real pequeño (`qwen2.5:1.5b`).
 - **LO QUE NO ESTÁ VALIDADO:** la calidad de redacción con los modelos reales de uso (7B/14B) frente a un acta real. Es la prioridad nº 1 (ver §6).
 
 ## 2. Cómo ponerla a correr en su equipo (puerto local)
@@ -24,7 +25,7 @@ git clone -b claude/keen-lovelace-msm3jv https://github.com/jade1010020668/extra
 cd extractor-siif/acta-privada
 pip install -r requirements-app.txt pytest
 ollama pull qwen2.5:7b-instruct          # 8 GB de RAM  (o qwen2.5:14b-instruct con 16 GB+)
-python -m pytest -q                       # debe dar 23 passed
+python -m pytest -q                       # debe dar 25 passed
 python launcher.py                        # abre http://127.0.0.1:8501 (solo local)
 ```
 

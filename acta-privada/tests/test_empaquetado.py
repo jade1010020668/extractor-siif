@@ -65,3 +65,19 @@ def test_launcher_puerto_libre():
     with socket.socket() as s:
         s.bind(("127.0.0.1", port))          # realmente estaba libre
     assert not launcher.responde("http://127.0.0.1:9/")
+
+
+def test_instalar_modelo_descarga_y_guarda_perfil(fake_ollama):
+    import instalar_modelo
+    url, srv = fake_ollama
+    msgs = []
+    assert instalar_modelo.descargar("qwen2.5:7b-instruct", url, msgs.append)
+    assert ("pull", "qwen2.5:7b-instruct") in srv.log
+    assert any("100%" in m for m in msgs)
+
+
+def test_instalar_modelo_sin_internet_no_rompe():
+    import instalar_modelo
+    msgs = []
+    assert instalar_modelo.descargar("qwen2.5:7b-instruct", "http://127.0.0.1:9", msgs.append) is False
+    assert any("Descargar modelo" in m for m in msgs)

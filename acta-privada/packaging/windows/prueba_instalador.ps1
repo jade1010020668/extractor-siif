@@ -11,22 +11,26 @@ $Inst = Join-Path $env:LOCALAPPDATA "Programs\ActaPrivada"
 $env:ACTA_DATA_DIR = Join-Path $env:RUNNER_TEMP "acta-datos"
 
 Write-Host "== Instalación silenciosa"
-Start-Process $Setup -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART" -Wait
+Start-Process $Setup -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", '/TASKS="m_none"' -Wait
 if (-not (Test-Path "$Inst\launcher.py")) { throw "No se instaló en $Inst" }
 
 Write-Host "== Arranque (autotest del lanzador)"
 & "$Inst\python\python.exe" "$Inst\launcher.py" --autotest
 if ($LASTEXITCODE) { throw "El lanzador falló" }
 
-Write-Host "== Ollama incluido + modelo $ModeloPrueba + acta con IA"
+Write-Host "== Descarga del modelo con el mismo script que usa el instalador ($ModeloPrueba)"
+$ErrorActionPreference = "Continue"
+& "$Inst\python\python.exe" "$Inst\instalar_modelo.py" --modelo $ModeloPrueba --sin-pausa
+$codeModelo = $LASTEXITCODE
+$ErrorActionPreference = "Stop"
+if ($codeModelo) { throw "instalar_modelo.py no pudo descargar el modelo" }
+if (-not (Test-Path (Join-Path $env:ACTA_DATA_DIR "modelos\manifests"))) { throw "El modelo no quedó en la carpeta de datos" }
+
+Write-Host "== Acta con IA"
 $env:OLLAMA_HOST = "127.0.0.1:11434"
 $env:OLLAMA_MODELS = Join-Path $env:ACTA_DATA_DIR "modelos"
 $ol = Start-Process "$Inst\ollama\ollama.exe" -ArgumentList "serve" -PassThru -WindowStyle Hidden
 Start-Sleep 5
-$ErrorActionPreference = "Continue"
-& "$Inst\ollama\ollama.exe" pull $ModeloPrueba
-$ErrorActionPreference = "Stop"
-if ($LASTEXITCODE) { throw "No se pudo descargar el modelo de prueba" }
 $salida = Join-Path $env:RUNNER_TEMP "acta_prueba.docx"
 Push-Location $Inst
 $ErrorActionPreference = "Continue"   # los avisos de progreso salen por stderr

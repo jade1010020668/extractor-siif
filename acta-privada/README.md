@@ -32,22 +32,24 @@ formato de la Sala Plena (datos generales, orden del día, desarrollo, firmas).
 2. Ejecútelo. No pide permisos de administrador: se instala solo para su usuario.
    Si Windows muestra «Windows protegió su PC», pulse *Más información → Ejecutar de todas formas*
    (el instalador no está firmado digitalmente).
-3. Abra **Actas Privadas** desde el escritorio o el menú Inicio. Se abre una ventana negra
-   (no la cierre) y el navegador en `http://127.0.0.1:...`.
-4. **Primera vez:** en la barra lateral elija el modelo y pulse **⬇️ Descargar modelo**:
+3. **El propio instalador descarga el modelo de IA** (una sola vez, necesita internet). En la pantalla
+   «Modelo de IA» deje marcada la opción recomendada, que elige según la RAM de su equipo:
 
 | Su equipo | Modelo | Descarga |
 |---|---|---|
 | 8 GB de RAM | `qwen2.5:7b-instruct` | 4,7 GB |
 | 16 GB de RAM o más | `qwen2.5:14b-instruct` (redacta mejor) | 9,0 GB |
 
-   La app detecta su RAM y marca el recomendado. Puede tener los dos y cambiar cuando quiera.
+   Al pulsar *Instalar* se abre una ventana negra con el avance de la descarga (no la cierre).
+   Si no hay internet en ese momento, la instalación termina igual y el modelo se descarga después
+   desde la app con un botón. También puede elegir «No descargar ahora».
+4. Abra **Actas Privadas** desde el escritorio o el menú Inicio. Se abre una ventana negra
+   (no la cierre) y el navegador en `http://127.0.0.1:...`. Puede cambiar de modelo (8 GB/16 GB) en la barra lateral.
 5. En la pestaña **⚙️ Configuración** registre los participantes habituales, los textos fijos y,
    si quiere el logo, suba un acta anterior como plantilla.
 
 **Qué incluye el instalador:** la app, Python y Ollama (versión para procesador, sin las
-librerías NVIDIA de 1,4 GB; si su equipo ya tiene Ollama abierto, se usa ese). El modelo no va
-dentro porque pesa 4,7–9 GB; se descarga una sola vez desde la app.
+librerías NVIDIA de 1,4 GB; si su equipo ya tiene Ollama abierto, se usa ese). El modelo (4,7–9 GB) no puede ir dentro del `.exe`: GitHub limita cada archivo a 2 GB. Por eso el instalador lo descarga solo mientras instala.
 
 **Equipos sin internet:** descargue el modelo en un equipo y copie la carpeta
 `%LOCALAPPDATA%\ActaPrivada\modelos` al mismo lugar en el otro.

@@ -30,7 +30,7 @@ function Get-File($url, $dest) {
 
 # 1. Código de la app (sin pruebas ni datos)
 Write-Host "== Copiando la aplicación"
-Copy-Item (Join-Path $Root "app.py"), (Join-Path $Root "launcher.py"), (Join-Path $Root "README.md") $App
+Copy-Item (Join-Path $Root "app.py"), (Join-Path $Root "launcher.py"), (Join-Path $Root "instalar_modelo.py"), (Join-Path $Root "README.md") $App
 Copy-Item (Join-Path $Root "acta_privada") $App -Recurse
 Get-ChildItem $App -Recurse -Directory -Filter "__pycache__" | Remove-Item -Recurse -Force
 New-Item -ItemType Directory -Force (Join-Path $App "config"), (Join-Path $App ".streamlit") | Out-Null

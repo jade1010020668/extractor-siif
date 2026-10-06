@@ -229,7 +229,7 @@ def pestaña_generar(llm: OllamaClient | None):
 # ──────────────────────────────── página ────────────────────────────────
 st.title("🔒 Generador de actas — 100 % local")
 st.caption("La transcripción se procesa solo en este equipo. Nada se envía a internet ni a la nube; "
-           "no se guarda en disco y se descarta al cerrar o pulsar «Borrar todo».")
+           "las transcripciones y actas no se guardan en disco: se descartan al cerrar o pulsar «Borrar todo».")
 with st.sidebar:
     motor = panel_motor()
     st.divider()
